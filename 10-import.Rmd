@@ -1,0 +1,90 @@
+---
+title: "10-import"
+output: html_notebook
+---
+
+## Introduction
+
+The dataset contains meteorological data from the HI-SEAS Habitat in Hawaii from September 2016 to December 2016. It contains columns including "UNIXTime", "Time", "wind direction", "wind speed", "humidity", temperature, pressure, time of sunrise and time of sunset and more.
+
+**My main problem** involves **solar radiation**, which is my response variable. I would like to explore the relationship between solar radiation and other predictors/variables listed in this data set. Also, I would like to use useful predictors to better predict solar radiation.
+
+## Library package
+```{r library package}
+library(readr)
+library(lubridate)
+library(assertr)
+library(janitor)
+library(tidyverse)
+```
+
+
+## Import data and check data
+
+```{r import data, clean column names and view data}
+solar <- read_csv("SolarPrediction.csv") %>% clean_names() # clean column names
+str(solar)
+head(solar)
+dim(solar)
+summary(solar)
+```
+
+The data set has 32686 rows and 11 columns.
+
+## Test the data
+
+```{r check the data using assert}
+solar %>% 
+  assert(!is.na(.)) # check whether there is NA value
+
+solar %>% 
+  assert(within_bounds(0,2000), radiation) # check whether the solar radition intensity is in a reasonable range
+
+solar %>% 
+  assert(within_bounds(14,103), temperature) # check whether the temperature is in a reasonable range
+
+solar %>% 
+  assert(within_bounds(28,32), pressure) # check whether the pressure is in a reasonable range
+
+solar %>% 
+  assert(within_bounds(0,100), humidity) # check whether the Humidity is in a reasonable range
+
+solar %>% 
+  assert(within_bounds(0,300), wind_direction_degrees) # check whether wind direction degrees is in a reasonable range
+
+solar %>% 
+  assert(within_bounds(0,15), speed) # check whether the speed is in a reasonable range
+```
+
+There are no NA values in this data set and the values of the most variables are in reasonable ranges. However, I think **humidity** which is supposed to be **relative humidity** could not have a value larger than 100. Therefore, I will modify those outliers in the second part.
+
+## Clean the data set
+
+### Combine the first three columns, which all refer to the data and time. Then arrange the data set by time
+
+```{r arrange data based on Time}
+
+solarprediction <- solar
+
+solarprediction$date_time <- as.POSIXct(as.numeric(as.character(solarprediction$unix_time)),origin="1970-01-01",tz="HST")
+
+solarprediction <- solarprediction[, -c(1,2)]
+solarprediction <- solarprediction %>% 
+  arrange(date_time) %>% 
+  select(date_time, everything())
+```
+
+### Modify outliers in humidity
+```{r modify outliers in humidity}
+max(solarprediction$humidity) # I will modify those values which >100 and <= 103 to 100
+
+solarprediction <- solarprediction %>% 
+  mutate(humidity = if_else(humidity > 100, 100, humidity))
+```
+
+Since the max value of outlier is only 103 which is really close to 100, I will modify outlier values into 100.
+
+### Basicly check the cleaned data
+```{r check cleaned data set}
+head(solarprediction)
+```

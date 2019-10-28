@@ -1,0 +1,76 @@
+---
+title: "30-feature-engineering"
+output: html_notebook
+---
+
+## Introduction
+In this part, I will write two functions which add engineered features to the dataset, including a description and rationale. Include a test to determine whether the features are working as intended.
+
+Also, I will describe the detail another two functions to help my teammate to better create the function.
+
+## Feature engineering already built
+
+### Feature Engineering: month, hour of a day
+
+I guess different months could be related to solar radiation. So I need to generate a new feature named month. Similarly, different hours of a day may also be related to radition
+
+```{r new feature: month, hour of a day}
+generate_month <- function(df, date){
+df <- df %>% 
+  mutate(month = factor(month({{date}}),labels = c("SEPT","OCT","NOV","DEC")),
+         hour_of_day = hour({{date}}))
+
+}
+
+solarprediction %>% generate_month(date_time) %>% 
+  assert(within_bounds(0,23), hour_of_day) %>% 
+  assert(in_set(c("SEPT","OCT","NOV","DEC"), month))
+```
+
+I also use assert for 'month' and 'hour_of_day' columns to make sure the features I generate are what I want.
+
+### Feature Engineering: day_with_sun
+
+I believe radiation is related whether it is a day with sun or a night without sun. Therefore, I will create a new column named day_with_sun and use "TRUE" and "FALSE" to represent the judegemnt of day and night.
+```{r new feature: day_with_sun}
+day_with_sun <- function(df, sunset, sunrise, real_time){
+  df <- df %>% 
+    mutate(day_with_sun = if_else({{real_time}} >= {{sunrise}} & {{real_time}} <= {{sunset}}, "TRUE", "FALSE"))
+}
+
+
+solarprediction %>%
+  day_with_sun(time_sun_set, time_sun_rise, time) %>% 
+  assert(in_set(c("TRUE","FALSE"), day_with_sun))
+```
+
+Also, I use assert to ensure the new feature I created is what I expect.
+
+## Feature engineering needed to be built
+### Sunshine hours
+
+The feature I would like to create is sunshine_hours. The sunshine hours = time of sun set - tine of sun rise.
+
+What I need is how many hours. However, time_sun_rise and time_sun_set is in 'hms' format. Therefore, it requires lubridate package. **hour** and **minute** function could be used to extract hours and minutes and seperately calculate them. Finally, you just need to transfer minutes into hours and combine them together.
+
+feature: sunshine_hours
+
+column used: time_sun_rise, time_sun_set
+
+key function maybe used: hour(), minute()
+
+### Compass Wind Directions
+
+Also, I would like to modify wind_direction_degrees. 
+
+It is in numeric formats but it should not be considered as a continious numeric variable affecting solar radiation because 355 degree is more close to 5 degree. But what if I use compass wind directions to represent wind direction degrees.
+
+I would like to use 16 compass wind directions: "N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW". Therefore 360 degress should be evenly divided into 16 parts.
+
+I believe case_when function could be used to build this feature. Also, a more easier way is to use factor() function. 
+
+feature: compass_directions
+
+column used: wind_direction_degrees
+
+key function maybe used: case_when() / factor()

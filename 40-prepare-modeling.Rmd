@@ -1,0 +1,35 @@
+---
+title: "40-prepare-modeling"
+output: html_notebook
+---
+
+## Applying feature engineering functions to generate new data table
+```{r applying feature engineering functions}
+solar_feature_engineering <- solarprediction %>% 
+  generate_month(date_time) %>% 
+  #sunshine_hours(time_sun_set,time_sun_rise) %>% 
+  day_with_sun(time_sun_set, time_sun_rise, time) %>% 
+  #compass_directions()
+
+head(solar_feature_engineering)
+```
+
+
+## Select response and predicto variables
+
+```{r select response and predictor variables for modeling}
+solar_model <- solar_feature_engineering %>% 
+  select(everything(),-time, -date_time,-time_sun_rise, -time_sun_set,-wind_direction_degrees)
+
+head(solar_model)
+```
+
+## Seperate the data set into training, validation and test set 
+```{r prepare train, validation and test set for modeling}
+set.seed(11)
+train_sub <- sample(nrow(solar_model),0.7*nrow(solar_model))
+train_set <- solar_model[train_sub,]
+val_test_set <- solar_model[-train_sub,]
+val_sub <- sample(nrow(val_test_set), 0.5*nrow(val_test_set))
+val_set <- val_test_set[val_sub,]
+test_set <- val_test_set[-val_sub,]
