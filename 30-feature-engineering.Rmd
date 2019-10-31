@@ -59,6 +59,26 @@ column used: time_sun_rise, time_sun_set
 
 key function maybe used: hour(), minute()
 
+```{r, add_sunshine_hours}
+# Add by Baiyu Chen for closing issue 1
+generate_sunshine_hours <- function(df, sunset, sunrise) {
+  df <- df %>% 
+    mutate(sunshine_hours = 
+             (hour({{sunset}}) - hour({{sunrise}})) +
+             (minute({{sunset}}) - minute({{sunrise}})) / 60
+          )
+}
+```
+
+```{r, test_sunshine_hours}
+# Add by Baiyu Chen for closing issue 1
+solarprediction %>%
+  generate_sunshine_hours(time_sun_set, time_sun_rise) %>% 
+  assert(within_bounds(0,24), sunshine_hours)
+  
+```
+
+
 ### Compass Wind Directions
 
 Also, I would like to modify wind_direction_degrees. 
